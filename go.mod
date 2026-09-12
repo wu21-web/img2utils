@@ -1,4 +1,4 @@
-module img2utils
+module github.com/wu21-web/img2utils
 
 go 1.27.1
 

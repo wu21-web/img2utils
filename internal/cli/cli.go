@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"img2utils/internal/convert"
+	"github.com/wu21-web/img2utils/internal/convert"
 )
 
 func Run(name string, target convert.Format, args []string, stderr io.Writer) int {

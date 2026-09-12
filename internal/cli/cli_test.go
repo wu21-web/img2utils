@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"img2utils/internal/convert"
+	"github.com/wu21-web/img2utils/internal/convert"
 )
 
 const webpFixture = "../testdata/sample.webp"

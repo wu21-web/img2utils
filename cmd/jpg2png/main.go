@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"img2utils/internal/cli"
-	"img2utils/internal/convert"
+	"github.com/wu21-web/img2utils/internal/cli"
+	"github.com/wu21-web/img2utils/internal/convert"
 )
 
 func main() {
