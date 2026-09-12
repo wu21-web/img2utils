@@ -1,0 +1,15 @@
+.git
+.github
+.venv
+bin
+dist
+coverage.*
+*.out
+.DS_Store
+
+api/.coverage
+api/.pytest_cache
+api/__pycache__
+api/coverage.xml
+api/requirements-dev.txt
+api/test_app.py

@@ -110,6 +110,34 @@ instead of a bare traceback. Images whose declared dimensions exceed
 `IMG2UTILS_MAX_PIXELS` are rejected before decoding, which keeps a small
 compressed file from being expanded into a huge pixel buffer.
 
+### Docker
+
+```bash
+docker build -t img2utils-api .
+docker run --rm -p 8000:8000 img2utils-api
+```
+
+The image compiles `img2utils` in a Go build stage and runs the Flask app as a
+non-root user with `IMG2UTILS_BIN=/app/bin/img2utils`, `HOST=0.0.0.0`, and
+`PORT=8000`. The variables above can be overridden with `docker run -e`, for
+example `-e IMG2UTILS_MAX_PIXELS=10000000`. Builds are attributed to the
+upstream repository through the `org.opencontainers.image.*` labels.
+
+Version tags publish the image to `ghcr.io/wu21-web/img2utils`, tagged with the
+git tag plus its semver forms. Publishing uses the `GHCR_TOKEN` repository
+secret, a personal access token with the `write:packages` scope:
+
+```bash
+docker run --rm -p 8000:8000 ghcr.io/wu21-web/img2utils:v0.0
+```
+
+Every push to `main` also builds the image and moves the `latest` tag, so that
+follows the tip of `main` independently of releases:
+
+```bash
+docker run --rm -p 8000:8000 ghcr.io/wu21-web/img2utils:latest
+```
+
 ## Development
 
 ```bash
@@ -121,14 +149,6 @@ python3 -m venv .venv
 .venv/bin/pip install -r api/requirements-dev.txt
 cd api && ../.venv/bin/pytest
 ```
-
-## Structure
-
-All conversion logic lives in `internal/convert`. The binaries under `cmd/` are
-thin frontends that share the argument parser in `internal/cli`, so new
-commands can be added without duplicating conversion or flag handling. The
-Flask service in `api/` shells out to `img2utils convert` and owns all base64
-handling.
 
 ## License
 
