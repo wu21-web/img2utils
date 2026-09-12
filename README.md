@@ -1,6 +1,7 @@
 # img2utils
 
 [![CI](https://github.com/wu21-web/img2utils/actions/workflows/ci.yml/badge.svg)](https://github.com/wu21-web/img2utils/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/wu21-web/img2utils/graph/badge.svg?token=CBT6VFMM2K)](https://codecov.io/gh/wu21-web/img2utils)
 
 Small, dependency-light image conversion commands written in Go.
 
