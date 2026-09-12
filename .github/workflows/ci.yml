@@ -28,7 +28,7 @@ jobs:
       - name: Test
         run: go test -covermode=atomic -coverprofile=coverage.txt ./...
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.txt
@@ -73,7 +73,7 @@ jobs:
         working-directory: api
         run: pytest --cov=app --cov=converter --cov-branch --cov-report=xml
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: api/coverage.xml
