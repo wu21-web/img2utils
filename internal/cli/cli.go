@@ -89,6 +89,8 @@ func converter(target convert.Format) (func(string, string) error, error) {
 		return convert.ToJPEG, nil
 	case convert.PNG:
 		return convert.ToPNG, nil
+	case convert.BMP:
+		return convert.ToBMP, nil
 	case convert.WebP:
 		return convert.ToWebP, nil
 	default:

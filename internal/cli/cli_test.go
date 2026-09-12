@@ -85,7 +85,7 @@ func TestRunReportsConversionFailure(t *testing.T) {
 
 func TestRunRejectsUnknownTarget(t *testing.T) {
 	var stderr bytes.Buffer
-	if code := Run("bmp2png", convert.Format("bmp"), []string{"input.bmp"}, &stderr); code != 1 {
+	if code := Run("avif2png", convert.Format("avif"), []string{"input.avif"}, &stderr); code != 1 {
 		t.Fatalf("Run() = %d, want 1", code)
 	}
 }

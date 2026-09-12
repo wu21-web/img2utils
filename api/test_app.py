@@ -105,11 +105,21 @@ def test_convert_rejects_invalid_base64(client):
 def test_convert_rejects_unknown_format(client):
     response = client.post(
         "/convert",
-        json={"image": sample_base64(), "format": "bmp"},
+        json={"image": sample_base64(), "format": "avif"},
     )
 
     assert response.status_code == 422
     assert "unsupported format" in response.get_json()["error"]
+
+
+def test_convert_png_to_bmp(client):
+    response = client.post(
+        "/convert",
+        json={"image": sample_base64(), "format": "bmp"},
+    )
+
+    assert response.status_code == 200
+    assert base64.b64decode(response.get_json()["image"]).startswith(b"BM")
 
 
 def test_convert_reports_webp_encoding_error(client):

@@ -28,6 +28,8 @@ func TestParseFormat(t *testing.T) {
 		{".png", PNG},
 		{".PNG", PNG},
 		{"png", PNG},
+		{".bmp", BMP},
+		{"bmp", BMP},
 		{".webp", WebP},
 		{"webp", WebP},
 	}
@@ -42,8 +44,64 @@ func TestParseFormat(t *testing.T) {
 		}
 	}
 
-	if _, err := ParseFormat(".bmp"); !errors.Is(err, ErrUnsupportedFormat) {
-		t.Errorf("ParseFormat(.bmp) error = %v, want ErrUnsupportedFormat", err)
+	if _, err := ParseFormat(".avif"); !errors.Is(err, ErrUnsupportedFormat) {
+		t.Errorf("ParseFormat(.avif) error = %v, want ErrUnsupportedFormat", err)
+	}
+}
+
+func TestFormatExtensions(t *testing.T) {
+	tests := []struct {
+		format Format
+		name   string
+		ext    string
+	}{
+		{JPEG, "jpg", ".jpg"},
+		{PNG, "png", ".png"},
+		{BMP, "bmp", ".bmp"},
+		{WebP, "webp", ".webp"},
+	}
+
+	for _, tt := range tests {
+		if got := tt.format.Name(); got != tt.name {
+			t.Errorf("Format(%q).Name() = %q, want %q", tt.format, got, tt.name)
+		}
+		if got := tt.format.Ext(); got != tt.ext {
+			t.Errorf("Format(%q).Ext() = %q, want %q", tt.format, got, tt.ext)
+		}
+	}
+}
+
+func TestConvertStreamFormats(t *testing.T) {
+	var input bytes.Buffer
+	if err := png.Encode(&input, testImage()); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		format Format
+		name   string
+	}{
+		{JPEG, "jpeg"},
+		{PNG, "png"},
+		{BMP, "bmp"},
+	}
+
+	for _, tt := range tests {
+		var output bytes.Buffer
+		if err := ConvertStream(bytes.NewReader(input.Bytes()), &output, tt.format); err != nil {
+			t.Fatalf("ConvertStream(%s) error: %v", tt.format, err)
+		}
+
+		img, got, err := image.Decode(&output)
+		if err != nil {
+			t.Fatalf("decode %s output: %v", tt.format, err)
+		}
+		if got != tt.name {
+			t.Errorf("ConvertStream(%s) produced %q, want %q", tt.format, got, tt.name)
+		}
+		if img.Bounds().Dx() != 2 {
+			t.Errorf("ConvertStream(%s) width = %d, want 2", tt.format, img.Bounds().Dx())
+		}
 	}
 }
 
@@ -144,18 +202,28 @@ func TestToJPEG(t *testing.T) {
 }
 
 func TestConvertUsesOutputExtension(t *testing.T) {
-	dir := t.TempDir()
-	output := filepath.Join(dir, "output.png")
-
-	if err := Convert(webpFixture, output); err != nil {
-		t.Fatalf("Convert() error: %v", err)
+	tests := []struct {
+		ext  string
+		name string
+	}{
+		{".png", "png"},
+		{".jpg", "jpeg"},
+		{".bmp", "bmp"},
 	}
-	assertFormat(t, output, "png", 4, 4)
+
+	for _, tt := range tests {
+		output := filepath.Join(t.TempDir(), "output"+tt.ext)
+
+		if err := Convert(webpFixture, output); err != nil {
+			t.Fatalf("Convert(%s) error: %v", tt.ext, err)
+		}
+		assertFormat(t, output, tt.name, 4, 4)
+	}
 }
 
 func TestConvertRejectsUnknownOutputExtension(t *testing.T) {
 	dir := t.TempDir()
-	output := filepath.Join(dir, "output.bmp")
+	output := filepath.Join(dir, "output.avif")
 
 	err := Convert(webpFixture, output)
 	if !errors.Is(err, ErrUnsupportedFormat) {
@@ -164,6 +232,19 @@ func TestConvertRejectsUnknownOutputExtension(t *testing.T) {
 	if _, statErr := os.Stat(output); !os.IsNotExist(statErr) {
 		t.Errorf("output file was created for unsupported format")
 	}
+}
+
+func TestToBMP(t *testing.T) {
+	dir := t.TempDir()
+	input := filepath.Join(dir, "input.png")
+	output := filepath.Join(dir, "output.bmp")
+
+	writeImage(t, input, "png", testImage())
+
+	if err := ToBMP(input, output); err != nil {
+		t.Fatalf("ToBMP() error: %v", err)
+	}
+	assertFormat(t, output, "bmp", 2, 2)
 }
 
 func TestToWebPReportsUnsupportedEncoding(t *testing.T) {

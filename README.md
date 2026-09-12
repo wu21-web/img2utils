@@ -20,10 +20,24 @@ stdout, which makes it easy to drive from other programs:
 ```bash
 img2utils convert --to png < hello.jpg > hello.png
 img2utils convert --to jpg < hello.webp > hello.jpg
+img2utils convert --to bmp < hello.png > hello.bmp
 ```
 
-The target format can be written as `jpg`, `jpeg`, `png`, or `webp`, with or
-without a leading dot.
+The target format can be written as `jpg`, `jpeg`, `png`, `bmp`, or `webp`, with
+or without a leading dot.
+
+## Formats
+
+The input format is detected from the image contents, so any supported input can
+be converted to any supported output:
+
+| Format | Decode | Encode |
+| ------ | ------ | ------ |
+| JPEG   | yes    | yes    |
+| PNG    | yes    | yes    |
+| BMP    | yes    | yes    |
+| WebP   | yes    | no     |
+
 
 ## Usage
 

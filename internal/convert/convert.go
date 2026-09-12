@@ -18,6 +18,7 @@ const DefaultMaxPixels = 25_000_000
 const (
 	JPEG Format = "jpeg"
 	PNG  Format = "png"
+	BMP  Format = "bmp"
 	WebP Format = "webp"
 )
 
@@ -32,6 +33,8 @@ func ParseFormat(name string) (Format, error) {
 		return JPEG, nil
 	case "png":
 		return PNG, nil
+	case "bmp":
+		return BMP, nil
 	case "webp":
 		return WebP, nil
 	default:
@@ -45,6 +48,8 @@ func (f Format) Ext() string {
 		return ".jpg"
 	case PNG:
 		return ".png"
+	case BMP:
+		return ".bmp"
 	case WebP:
 		return ".webp"
 	default:
@@ -58,6 +63,8 @@ func (f Format) Name() string {
 		return "jpg"
 	case PNG:
 		return "png"
+	case BMP:
+		return "bmp"
 	case WebP:
 		return "webp"
 	default:
@@ -79,6 +86,10 @@ func ToJPEG(inputPath, outputPath string) error {
 
 func ToPNG(inputPath, outputPath string) error {
 	return convertTo(inputPath, outputPath, PNG)
+}
+
+func ToBMP(inputPath, outputPath string) error {
+	return convertTo(inputPath, outputPath, BMP)
 }
 
 func ToWebP(inputPath, outputPath string) error {
@@ -158,6 +169,8 @@ func encodeTo(w io.Writer, img image.Image, format Format) error {
 		return encodeJPEG(w, img)
 	case PNG:
 		return encodePNG(w, img)
+	case BMP:
+		return encodeBMP(w, img)
 	case WebP:
 		return ErrWebPEncode
 	default:

@@ -54,8 +54,32 @@ func TestRunConvertRejectsMissingFormat(t *testing.T) {
 func TestRunConvertRejectsUnknownFormat(t *testing.T) {
 	input := encodePNG(t)
 
-	if code := run([]string{"convert", "--to", "bmp"}, input, &bytes.Buffer{}); code != 1 {
+	if code := run([]string{"convert", "--to", "avif"}, input, &bytes.Buffer{}); code != 1 {
 		t.Errorf("run() = %d, want 1", code)
+	}
+}
+
+func TestRunConvertEncodesEveryFormat(t *testing.T) {
+	tests := []struct {
+		to   string
+		want string
+	}{
+		{"jpg", "jpeg"},
+		{"png", "png"},
+		{"bmp", "bmp"},
+	}
+
+	for _, tt := range tests {
+		var output bytes.Buffer
+		if code := run([]string{"convert", "--to", tt.to}, encodePNG(t), &output); code != 0 {
+			t.Fatalf("run(--to %s) = %d, want 0", tt.to, code)
+		}
+
+		if _, got, err := image.Decode(&output); err != nil {
+			t.Fatalf("decode --to %s output: %v", tt.to, err)
+		} else if got != tt.want {
+			t.Errorf("--to %s produced %q, want %q", tt.to, got, tt.want)
+		}
 	}
 }
 
