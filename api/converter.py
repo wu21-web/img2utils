@@ -31,6 +31,9 @@ def convert(image: bytes, target: str) -> bytes:
         raise ConversionError(f"converter binary not found: {binary}") from exc
     except subprocess.TimeoutExpired as exc:
         raise ConversionError("conversion timed out") from exc
+    except OSError as exc:
+        reason = exc.strerror or str(exc)
+        raise ConversionError(f"converter binary is not runnable: {binary} ({reason})") from exc
 
     if result.returncode != 0:
         detail = result.stderr.decode("utf-8", "replace").strip()

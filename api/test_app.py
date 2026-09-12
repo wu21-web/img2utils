@@ -129,3 +129,33 @@ def test_convert_reports_invalid_image(client):
 
     assert response.status_code == 422
     assert "decode" in response.get_json()["error"]
+
+
+def test_convert_reports_missing_binary(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("IMG2UTILS_BIN", str(tmp_path / "missing"))
+
+    response = client.post("/convert", json={"image": sample_base64(), "format": "png"})
+
+    assert response.status_code == 422
+    assert "not found" in response.get_json()["error"]
+
+
+def test_convert_reports_non_executable_binary(client, tmp_path, monkeypatch):
+    binary = tmp_path / "img2utils"
+    binary.write_bytes(b"#!/bin/sh\n")
+    binary.chmod(0o644)
+    monkeypatch.setenv("IMG2UTILS_BIN", str(binary))
+
+    response = client.post("/convert", json={"image": sample_base64(), "format": "png"})
+
+    assert response.status_code == 422
+    assert "not runnable" in response.get_json()["error"]
+
+
+def test_convert_reports_binary_directory(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("IMG2UTILS_BIN", str(tmp_path))
+
+    response = client.post("/convert", json={"image": sample_base64(), "format": "png"})
+
+    assert response.status_code == 422
+    assert "not runnable" in response.get_json()["error"]
