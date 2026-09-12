@@ -31,7 +31,8 @@ jobs:
             ext=".exe"
           fi
           mkdir -p dist
-          for cmd in img2utils jpg2png webp2png png2jpg; do
+          for dir in cmd/*/; do
+            cmd=$(basename "$dir")
             go build -trimpath -o "dist/${cmd}${ext}" "./cmd/${cmd}"
           done
       - name: Package archive

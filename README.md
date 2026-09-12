@@ -4,13 +4,16 @@ Small, dependency-light image conversion commands written in Go.
 
 ## Commands
 
-| Command    | Converts    | Status    |
-| ---------- | ----------- | --------- |
-| `jpg2png`  | JPEG -> PNG | Supported |
-| `webp2png` | WebP -> PNG | Supported |
-| `png2jpg`  | PNG -> JPEG | Supported |
+| From \ To | JPEG       | PNG        | BMP        |
+| --------- | ---------- | ---------- | ---------- |
+| WebP      | `webp2jpg` | `webp2png` | `webp2bmp` |
+| JPEG      | —          | `jpg2png`  | `jpg2bmp`  |
+| PNG       | `png2jpg`  | —          | `png2bmp`  |
+| BMP       | `bmp2jpg`  | `bmp2png`  | —          |
 
-WebP decoding is supported; WebP encoding is not.
+The input format is detected from the file contents, so any command reads any
+supported input; the name describes the common case. WebP is decode-only, which
+is why nothing writes WebP.
 
 ## Core command
 
@@ -38,7 +41,6 @@ be converted to any supported output:
 | BMP    | yes    | yes    |
 | WebP   | yes    | no     |
 
-
 ## Usage
 
 ```bash
@@ -46,6 +48,7 @@ jpg2png hello.jpg -O hello.png
 jpg2png hello.jpg -o hello.png
 webp2png hello.webp -o hello.png
 png2jpg hello.png -O hello.jpg
+png2bmp hello.png -O hello.bmp
 ```
 
 Both `-o` and `-O` are accepted. The output path can be omitted, in which case
@@ -61,9 +64,15 @@ png2jpg hello.png   # writes hello.jpg
 
 ```bash
 go install github.com/wu21-web/img2utils/cmd/img2utils@latest
+go install github.com/wu21-web/img2utils/cmd/bmp2jpg@latest
+go install github.com/wu21-web/img2utils/cmd/bmp2png@latest
+go install github.com/wu21-web/img2utils/cmd/jpg2bmp@latest
 go install github.com/wu21-web/img2utils/cmd/jpg2png@latest
-go install github.com/wu21-web/img2utils/cmd/webp2png@latest
+go install github.com/wu21-web/img2utils/cmd/png2bmp@latest
 go install github.com/wu21-web/img2utils/cmd/png2jpg@latest
+go install github.com/wu21-web/img2utils/cmd/webp2bmp@latest
+go install github.com/wu21-web/img2utils/cmd/webp2jpg@latest
+go install github.com/wu21-web/img2utils/cmd/webp2png@latest
 ```
 
 Requires Go 1.26 or newer.
@@ -71,10 +80,7 @@ Requires Go 1.26 or newer.
 ## Build
 
 ```bash
-go build ./cmd/img2utils
-go build ./cmd/jpg2png
-go build ./cmd/webp2png
-go build ./cmd/png2jpg
+go build ./cmd/...
 ```
 
 ## HTTP API
@@ -138,7 +144,7 @@ example `-e IMG2UTILS_MAX_PIXELS=10000000`. Builds are attributed to the
 upstream repository through the `org.opencontainers.image.*` labels.
 
 Version tags publish the image to `ghcr.io/wu21-web/img2utils`, tagged with the
-git tag plus its semver forms. Publishing uses the `GHCR_TOKEN` repository
+git tag plus its semver forms. Publishing uses the `DOCKER_TOKEN` repository
 secret, a personal access token with the `write:packages` scope:
 
 ```bash
