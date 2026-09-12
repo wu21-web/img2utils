@@ -83,6 +83,93 @@ func TestRunReportsConversionFailure(t *testing.T) {
 	}
 }
 
+func TestRunConvertsMultipleInputs(t *testing.T) {
+	dir := t.TempDir()
+	first := filepath.Join(dir, "a.png")
+	second := filepath.Join(dir, "b.png")
+	writePNG(t, first)
+	writePNG(t, second)
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{first, second}, &stderr); code != 0 {
+		t.Fatalf("Run() = %d, stderr: %s", code, stderr.String())
+	}
+	for _, name := range []string{"a.jpg", "b.jpg"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); err != nil {
+			t.Errorf("expected %s: %v", name, err)
+		}
+	}
+}
+
+func TestRunExpandsGlob(t *testing.T) {
+	dir := t.TempDir()
+	writePNG(t, filepath.Join(dir, "a.png"))
+	writePNG(t, filepath.Join(dir, "b.png"))
+	if err := os.Mkdir(filepath.Join(dir, "nested.png"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Chdir(dir)
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{"*.png"}, &stderr); code != 0 {
+		t.Fatalf("Run() = %d, stderr: %s", code, stderr.String())
+	}
+	for _, name := range []string{"a.jpg", "b.jpg"} {
+		if _, err := os.Stat(name); err != nil {
+			t.Errorf("expected %s: %v", name, err)
+		}
+	}
+}
+
+func TestRunExpandsGlobWithNoMatches(t *testing.T) {
+	t.Chdir(t.TempDir())
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{"*.png"}, &stderr); code != 1 {
+		t.Fatalf("Run() = %d, want 1", code)
+	}
+	if !strings.Contains(stderr.String(), "*.png") {
+		t.Errorf("stderr = %q, want the pattern", stderr.String())
+	}
+}
+
+func TestRunRejectsOutputFlagWithMultipleInputs(t *testing.T) {
+	dir := t.TempDir()
+	first := filepath.Join(dir, "a.png")
+	second := filepath.Join(dir, "b.png")
+	output := filepath.Join(dir, "custom.jpg")
+	writePNG(t, first)
+	writePNG(t, second)
+
+	var stderr bytes.Buffer
+	code := Run("png2jpg", convert.JPEG, []string{first, second, "-o", output}, &stderr)
+	if code != 2 {
+		t.Fatalf("Run() = %d, want 2", code)
+	}
+	if _, err := os.Stat(output); !os.IsNotExist(err) {
+		t.Errorf("output file was created")
+	}
+}
+
+func TestRunReportsEachFailureAndContinues(t *testing.T) {
+	dir := t.TempDir()
+	good := filepath.Join(dir, "good.png")
+	missing := filepath.Join(dir, "missing.png")
+	writePNG(t, good)
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{good, missing}, &stderr); code != 1 {
+		t.Fatalf("Run() = %d, want 1", code)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "good.jpg")); err != nil {
+		t.Errorf("expected good.jpg: %v", err)
+	}
+	if !strings.Contains(stderr.String(), "missing.png") {
+		t.Errorf("stderr = %q, want the failing input", stderr.String())
+	}
+}
+
 func TestRunRejectsUnknownTarget(t *testing.T) {
 	var stderr bytes.Buffer
 	if code := Run("avif2png", convert.Format("avif"), []string{"input.avif"}, &stderr); code != 1 {
