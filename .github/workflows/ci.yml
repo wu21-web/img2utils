@@ -45,7 +45,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: go build ./...
+      - run: go build -trimpath -o dist/ ./cmd/...
+      - uses: actions/upload-artifact@v7
+        with:
+          name: img2utils-debug-${{ matrix.os }}
+          path: dist/
+          retention-days: 3
 
   api:
     runs-on: ubuntu-latest
