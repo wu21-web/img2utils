@@ -89,6 +89,34 @@ func TestConvertStreamRejectsWebPEncoding(t *testing.T) {
 	}
 }
 
+func TestConvertStreamRejectsTooManyPixels(t *testing.T) {
+	input, err := os.Open("../testdata/oversized.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer input.Close()
+
+	var output bytes.Buffer
+	if err := ConvertStream(input, &output, PNG); !errors.Is(err, ErrTooManyPixels) {
+		t.Fatalf("ConvertStream() error = %v, want ErrTooManyPixels", err)
+	}
+	if output.Len() != 0 {
+		t.Errorf("wrote %d bytes for an oversized image", output.Len())
+	}
+}
+
+func TestConvertStreamLimitDisabled(t *testing.T) {
+	var input bytes.Buffer
+	if err := png.Encode(&input, testImage()); err != nil {
+		t.Fatal(err)
+	}
+
+	var output bytes.Buffer
+	if err := ConvertStreamLimit(&input, &output, PNG, 0); err != nil {
+		t.Fatalf("ConvertStreamLimit() error: %v", err)
+	}
+}
+
 func TestToPNG(t *testing.T) {
 	dir := t.TempDir()
 	input := filepath.Join(dir, "input.jpg")

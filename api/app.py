@@ -26,6 +26,9 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = env_int(
     "IMG2UTILS_MAX_UPLOAD", 16 * 1024 * 1024, minimum=1
 )
+app.config["IMG2UTILS_MAX_PIXELS"] = env_int(
+    "IMG2UTILS_MAX_PIXELS", 25_000_000, minimum=0
+)
 
 
 @app.get("/health")
@@ -53,7 +56,7 @@ def convert_image():
         return jsonify(error="image is not valid base64"), 400
 
     try:
-        converted = convert(image, target)
+        converted = convert(image, target, app.config["IMG2UTILS_MAX_PIXELS"])
     except ConversionError as exc:
         return jsonify(error=str(exc)), 422
 
