@@ -9,7 +9,7 @@ class ConversionError(RuntimeError):
     pass
 
 
-def convert(image: bytes, target: str) -> bytes:
+def convert(image: bytes, target: str, max_pixels: int = 0) -> bytes:
     binary = os.environ.get("IMG2UTILS_BIN", DEFAULT_BINARY)
     timeout = DEFAULT_TIMEOUT
     raw_timeout = os.environ.get("IMG2UTILS_TIMEOUT")
@@ -21,7 +21,7 @@ def convert(image: bytes, target: str) -> bytes:
 
     try:
         result = subprocess.run(
-            [binary, "convert", "--to", target],
+            [binary, "convert", "--to", target, "--max-pixels", str(max_pixels)],
             input=image,
             capture_output=True,
             timeout=timeout,
@@ -34,6 +34,8 @@ def convert(image: bytes, target: str) -> bytes:
     except OSError as exc:
         reason = exc.strerror or str(exc)
         raise ConversionError(f"converter binary is not runnable: {binary} ({reason})") from exc
+    except ValueError as exc:
+        raise ConversionError(f"invalid conversion request: {exc}") from exc
 
     if result.returncode != 0:
         detail = result.stderr.decode("utf-8", "replace").strip()

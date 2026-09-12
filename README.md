@@ -101,11 +101,14 @@ Environment variables:
 | `IMG2UTILS_BIN`        | `bin/img2utils`| Path to the converter binary  |
 | `IMG2UTILS_TIMEOUT`    | `30`           | Subprocess timeout in seconds |
 | `IMG2UTILS_MAX_UPLOAD` | `16777216`     | Maximum request body in bytes |
+| `IMG2UTILS_MAX_PIXELS` | `25000000`     | Decoded image pixel limit     |
 | `HOST`                 | `127.0.0.1`    | Dev server bind address       |
 | `PORT`                 | `8000`         | Dev server port               |
 
 Malformed integer values for these variables stop startup with a clear error
-instead of a bare traceback.
+instead of a bare traceback. Images whose declared dimensions exceed
+`IMG2UTILS_MAX_PIXELS` are rejected before decoding, which keeps a small
+compressed file from being expanded into a huge pixel buffer.
 
 ## Development
 
@@ -114,6 +117,8 @@ gofmt -l .
 go vet ./...
 go test ./...
 go build -o bin/img2utils ./cmd/img2utils
+python3 -m venv .venv
+.venv/bin/pip install -r api/requirements-dev.txt
 cd api && ../.venv/bin/pytest
 ```
 
