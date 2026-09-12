@@ -40,6 +40,12 @@ func Run(name string, target convert.Format, args []string, stderr io.Writer) in
 		return 2
 	}
 
+	outputs, err := outputPaths(inputs, output, target)
+	if err != nil {
+		fmt.Fprintf(stderr, "%s: %v\n", name, err)
+		return 2
+	}
+
 	convertFn, err := converter(target)
 	if err != nil {
 		fmt.Fprintf(stderr, "%s: %v\n", name, err)
@@ -47,12 +53,8 @@ func Run(name string, target convert.Format, args []string, stderr io.Writer) in
 	}
 
 	failed := false
-	for _, input := range inputs {
-		outputPath := output
-		if outputPath == "" {
-			outputPath = defaultOutput(input, target)
-		}
-		if err := convertFn(input, outputPath); err != nil {
+	for i, input := range inputs {
+		if err := convertFn(input, outputs[i]); err != nil {
 			fmt.Fprintf(stderr, "%s: %v\n", name, err)
 			failed = true
 		}
@@ -61,6 +63,36 @@ func Run(name string, target convert.Format, args []string, stderr io.Writer) in
 		return 1
 	}
 	return 0
+}
+
+func outputPaths(inputs []string, output string, target convert.Format) ([]string, error) {
+	sources := make(map[string]struct{}, len(inputs))
+	for _, input := range inputs {
+		sources[filepath.Clean(input)] = struct{}{}
+	}
+
+	outputs := make([]string, len(inputs))
+	owners := make(map[string]string, len(inputs))
+
+	for i, input := range inputs {
+		path := output
+		if path == "" {
+			path = defaultOutput(input, target)
+		}
+		path = filepath.Clean(path)
+
+		if owner, ok := owners[path]; ok {
+			return nil, fmt.Errorf("%s and %s both write to %s", owner, input, path)
+		}
+		if _, ok := sources[path]; ok {
+			return nil, fmt.Errorf("refusing to overwrite input %s", path)
+		}
+
+		owners[path] = input
+		outputs[i] = path
+	}
+
+	return outputs, nil
 }
 
 func expand(args []string) ([]string, error) {

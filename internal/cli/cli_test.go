@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -67,6 +68,76 @@ func TestRunRequiresOneInput(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "usage: png2jpg") {
 		t.Errorf("stderr = %q, want usage", stderr.String())
+	}
+}
+
+func TestRunRejectsUnknownFlag(t *testing.T) {
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{"-x"}, &stderr); code != 2 {
+		t.Fatalf("Run() = %d, want 2, stderr: %s", code, stderr.String())
+	}
+}
+
+func TestRunReportsInvalidGlobPattern(t *testing.T) {
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{"["}, &stderr); code != 2 {
+		t.Fatalf("Run() = %d, want 2, stderr: %s", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "syntax error in pattern") {
+		t.Errorf("stderr = %q, want pattern error", stderr.String())
+	}
+}
+
+func TestRunConvertsPathWithGlobCharacters(t *testing.T) {
+	dir := t.TempDir()
+	input := filepath.Join(dir, "star*.png")
+	writePNG(t, input)
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{input}, &stderr); code != 0 {
+		t.Fatalf("Run() = %d, stderr: %s", code, stderr.String())
+	}
+	if _, err := os.Stat(filepath.Join(dir, "star*.jpg")); err != nil {
+		t.Errorf("expected star*.jpg: %v", err)
+	}
+}
+
+func TestRunDerivesOutputWithoutExtension(t *testing.T) {
+	dir := t.TempDir()
+	input := filepath.Join(dir, "photo")
+	writePNG(t, input)
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{input}, &stderr); code != 0 {
+		t.Fatalf("Run() = %d, stderr: %s", code, stderr.String())
+	}
+	if _, err := os.Stat(input + ".jpg"); err != nil {
+		t.Errorf("expected photo.jpg: %v", err)
+	}
+}
+
+func TestRunSkipsUnreadableGlobMatches(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlinks need extra privileges on Windows")
+	}
+
+	dir := t.TempDir()
+	writePNG(t, filepath.Join(dir, "a.png"))
+	if err := os.Symlink(filepath.Join(dir, "gone.png"), filepath.Join(dir, "dangling.png")); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Chdir(dir)
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{"*.png"}, &stderr); code != 0 {
+		t.Fatalf("Run() = %d, stderr: %s", code, stderr.String())
+	}
+	if _, err := os.Stat("a.jpg"); err != nil {
+		t.Errorf("expected a.jpg: %v", err)
+	}
+	if _, err := os.Stat("dangling.jpg"); !os.IsNotExist(err) {
+		t.Errorf("dangling symlink should not be converted")
 	}
 }
 
@@ -149,6 +220,63 @@ func TestRunRejectsOutputFlagWithMultipleInputs(t *testing.T) {
 	}
 	if _, err := os.Stat(output); !os.IsNotExist(err) {
 		t.Errorf("output file was created")
+	}
+}
+
+func TestRunRejectsCollidingOutputPaths(t *testing.T) {
+	dir := t.TempDir()
+	png := filepath.Join(dir, "photo.png")
+	webp := filepath.Join(dir, "photo.webp")
+	writePNG(t, png)
+
+	raw, err := os.ReadFile(webpFixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(webp, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{png, webp}, &stderr); code != 2 {
+		t.Fatalf("Run() = %d, want 2, stderr: %s", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "both write to") {
+		t.Errorf("stderr = %q, want collision error", stderr.String())
+	}
+	if _, err := os.Stat(filepath.Join(dir, "photo.jpg")); !os.IsNotExist(err) {
+		t.Errorf("photo.jpg was written despite the collision")
+	}
+}
+
+func TestRunRejectsOverwritingItsInput(t *testing.T) {
+	dir := t.TempDir()
+	png := filepath.Join(dir, "photo.png")
+	jpg := filepath.Join(dir, "photo.jpg")
+	writePNG(t, png)
+	if err := convert.ToJPEG(png, jpg); err != nil {
+		t.Fatal(err)
+	}
+
+	before, err := os.ReadFile(jpg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var stderr bytes.Buffer
+	if code := Run("png2jpg", convert.JPEG, []string{jpg}, &stderr); code != 2 {
+		t.Fatalf("Run() = %d, want 2, stderr: %s", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "refusing to overwrite input") {
+		t.Errorf("stderr = %q, want overwrite refusal", stderr.String())
+	}
+
+	after, err := os.ReadFile(jpg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Errorf("input file was modified")
 	}
 }
 
