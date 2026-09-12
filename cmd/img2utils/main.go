@@ -37,6 +37,7 @@ func runConvert(args []string, stdin io.Reader, stdout io.Writer) int {
 	flags := flag.NewFlagSet("convert", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 	to := flags.String("to", "", "target format: jpg, png, or webp")
+	maxPixels := flags.Int("max-pixels", convert.DefaultMaxPixels, "reject images above this many pixels (0 disables)")
 	flags.Usage = func() {
 		fmt.Fprintln(os.Stderr, "usage: img2utils convert --to <format> < input > output")
 		flags.PrintDefaults()
@@ -58,7 +59,7 @@ func runConvert(args []string, stdin io.Reader, stdout io.Writer) int {
 		fmt.Fprintf(os.Stderr, "img2utils: %v\n", err)
 		return 1
 	}
-	if err := convert.ConvertStream(stdin, stdout, format); err != nil {
+	if err := convert.ConvertStreamLimit(stdin, stdout, format, *maxPixels); err != nil {
 		fmt.Fprintf(os.Stderr, "img2utils: %v\n", err)
 		return 1
 	}

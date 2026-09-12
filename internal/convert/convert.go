@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"image"
@@ -12,13 +13,18 @@ import (
 
 type Format string
 
+const DefaultMaxPixels = 25_000_000
+
 const (
 	JPEG Format = "jpeg"
 	PNG  Format = "png"
 	WebP Format = "webp"
 )
 
-var ErrUnsupportedFormat = errors.New("unsupported format")
+var (
+	ErrUnsupportedFormat = errors.New("unsupported format")
+	ErrTooManyPixels     = errors.New("image has too many pixels")
+)
 
 func ParseFormat(name string) (Format, error) {
 	switch strings.ToLower(strings.TrimPrefix(name, ".")) {
@@ -80,7 +86,27 @@ func ToWebP(inputPath, outputPath string) error {
 }
 
 func ConvertStream(r io.Reader, w io.Writer, format Format) error {
-	img, _, err := image.Decode(r)
+	return ConvertStreamLimit(r, w, format, DefaultMaxPixels)
+}
+
+func ConvertStreamLimit(r io.Reader, w io.Writer, format Format, maxPixels int) error {
+	data, err := io.ReadAll(r)
+	if err != nil {
+		return fmt.Errorf("read image: %w", err)
+	}
+
+	if maxPixels > 0 {
+		config, _, err := image.DecodeConfig(bytes.NewReader(data))
+		if err != nil {
+			return fmt.Errorf("decode image: %w", err)
+		}
+		pixels := int64(config.Width) * int64(config.Height)
+		if pixels > int64(maxPixels) {
+			return fmt.Errorf("%w: %dx%d exceeds %d", ErrTooManyPixels, config.Width, config.Height, maxPixels)
+		}
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("decode image: %w", err)
 	}

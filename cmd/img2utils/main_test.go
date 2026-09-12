@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"os"
 	"testing"
 )
 
@@ -61,6 +62,26 @@ func TestRunConvertRejectsUnknownFormat(t *testing.T) {
 func TestRunConvertRejectsExtraArguments(t *testing.T) {
 	if code := run([]string{"convert", "--to", "png", "extra"}, bytes.NewReader(nil), &bytes.Buffer{}); code != 2 {
 		t.Errorf("run() = %d, want 2", code)
+	}
+}
+
+func TestRunConvertRejectsTooManyPixels(t *testing.T) {
+	input, err := os.Open("../../internal/testdata/oversized.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer input.Close()
+
+	if code := run([]string{"convert", "--to", "png"}, input, &bytes.Buffer{}); code != 1 {
+		t.Errorf("run() = %d, want 1", code)
+	}
+}
+
+func TestRunConvertAcceptsMaxPixelsFlag(t *testing.T) {
+	input := encodePNG(t)
+
+	if code := run([]string{"convert", "--to", "png", "--max-pixels", "0"}, input, &bytes.Buffer{}); code != 0 {
+		t.Errorf("run() = %d, want 0", code)
 	}
 }
 
