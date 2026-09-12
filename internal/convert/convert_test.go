@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"bytes"
 	"errors"
 	"image"
 	"image/color"
@@ -8,6 +9,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -18,12 +20,16 @@ func TestParseFormat(t *testing.T) {
 		ext  string
 		want Format
 	}{
+		{"jpg", JPEG},
 		{".jpg", JPEG},
 		{".JPG", JPEG},
 		{".jpeg", JPEG},
+		{"jpeg", JPEG},
 		{".png", PNG},
 		{".PNG", PNG},
+		{"png", PNG},
 		{".webp", WebP},
+		{"webp", WebP},
 	}
 
 	for _, tt := range tests {
@@ -38,6 +44,48 @@ func TestParseFormat(t *testing.T) {
 
 	if _, err := ParseFormat(".bmp"); !errors.Is(err, ErrUnsupportedFormat) {
 		t.Errorf("ParseFormat(.bmp) error = %v, want ErrUnsupportedFormat", err)
+	}
+}
+
+func TestConvertStream(t *testing.T) {
+	var input bytes.Buffer
+	if err := png.Encode(&input, testImage()); err != nil {
+		t.Fatal(err)
+	}
+
+	var output bytes.Buffer
+	if err := ConvertStream(&input, &output, JPEG); err != nil {
+		t.Fatalf("ConvertStream() error: %v", err)
+	}
+
+	img, format, err := image.Decode(&output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if format != "jpeg" {
+		t.Errorf("format = %q, want jpeg", format)
+	}
+	if got := img.Bounds().Dx(); got != 2 {
+		t.Errorf("width = %d, want 2", got)
+	}
+}
+
+func TestConvertStreamRejectsInvalidImage(t *testing.T) {
+	var output bytes.Buffer
+	if err := ConvertStream(strings.NewReader("not an image"), &output, PNG); err == nil {
+		t.Fatal("ConvertStream() error = nil, want decode error")
+	}
+}
+
+func TestConvertStreamRejectsWebPEncoding(t *testing.T) {
+	var input bytes.Buffer
+	if err := png.Encode(&input, testImage()); err != nil {
+		t.Fatal(err)
+	}
+
+	var output bytes.Buffer
+	if err := ConvertStream(&input, &output, WebP); !errors.Is(err, ErrWebPEncode) {
+		t.Fatalf("ConvertStream() error = %v, want ErrWebPEncode", err)
 	}
 }
 

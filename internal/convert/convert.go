@@ -20,16 +20,42 @@ const (
 
 var ErrUnsupportedFormat = errors.New("unsupported format")
 
-func ParseFormat(ext string) (Format, error) {
-	switch strings.ToLower(ext) {
-	case ".jpg", ".jpeg":
+func ParseFormat(name string) (Format, error) {
+	switch strings.ToLower(strings.TrimPrefix(name, ".")) {
+	case "jpg", "jpeg":
 		return JPEG, nil
-	case ".png":
+	case "png":
 		return PNG, nil
-	case ".webp":
+	case "webp":
 		return WebP, nil
 	default:
-		return "", fmt.Errorf("%w: %q", ErrUnsupportedFormat, ext)
+		return "", fmt.Errorf("%w: %q", ErrUnsupportedFormat, name)
+	}
+}
+
+func (f Format) Ext() string {
+	switch f {
+	case JPEG:
+		return ".jpg"
+	case PNG:
+		return ".png"
+	case WebP:
+		return ".webp"
+	default:
+		return ""
+	}
+}
+
+func (f Format) Name() string {
+	switch f {
+	case JPEG:
+		return "jpg"
+	case PNG:
+		return "png"
+	case WebP:
+		return "webp"
+	default:
+		return ""
 	}
 }
 
@@ -51,6 +77,14 @@ func ToPNG(inputPath, outputPath string) error {
 
 func ToWebP(inputPath, outputPath string) error {
 	return convertTo(inputPath, outputPath, WebP)
+}
+
+func ConvertStream(r io.Reader, w io.Writer, format Format) error {
+	img, _, err := image.Decode(r)
+	if err != nil {
+		return fmt.Errorf("decode image: %w", err)
+	}
+	return encodeTo(w, img, format)
 }
 
 func convertTo(inputPath, outputPath string, format Format) error {
@@ -76,18 +110,6 @@ func decode(path string) (image.Image, error) {
 }
 
 func encode(path string, img image.Image, format Format) (err error) {
-	var encodeFn func(io.Writer, image.Image) error
-	switch format {
-	case JPEG:
-		encodeFn = encodeJPEG
-	case PNG:
-		encodeFn = encodePNG
-	case WebP:
-		return ErrWebPEncode
-	default:
-		return fmt.Errorf("%w: %q", ErrUnsupportedFormat, format)
-	}
-
 	f, err := os.Create(path)
 	if err != nil {
 		return err
@@ -101,5 +123,18 @@ func encode(path string, img image.Image, format Format) (err error) {
 		err = closeErr
 	}()
 
-	return encodeFn(f, img)
+	return encodeTo(f, img, format)
+}
+
+func encodeTo(w io.Writer, img image.Image, format Format) error {
+	switch format {
+	case JPEG:
+		return encodeJPEG(w, img)
+	case PNG:
+		return encodePNG(w, img)
+	case WebP:
+		return ErrWebPEncode
+	default:
+		return fmt.Errorf("%w: %q", ErrUnsupportedFormat, format)
+	}
 }

@@ -18,7 +18,7 @@ func Run(name string, target convert.Format, args []string, stderr io.Writer) in
 	flags.StringVar(&output, "o", "", "output file")
 	flags.StringVar(&output, "O", "", "output file")
 	flags.Usage = func() {
-		fmt.Fprintf(stderr, "usage: %s input.%s [-o output%s]\n", name, sourceExt(target), targetExt(target))
+		fmt.Fprintf(stderr, "usage: %s input.%s [-o output%s]\n", name, target.Name(), target.Ext())
 		flags.PrintDefaults()
 	}
 
@@ -78,9 +78,9 @@ func normalizeArgs(args []string) []string {
 func defaultOutput(input string, target convert.Format) string {
 	ext := filepath.Ext(input)
 	if ext == "" {
-		return input + targetExt(target)
+		return input + target.Ext()
 	}
-	return strings.TrimSuffix(input, ext) + targetExt(target)
+	return strings.TrimSuffix(input, ext) + target.Ext()
 }
 
 func converter(target convert.Format) (func(string, string) error, error) {
@@ -93,31 +93,5 @@ func converter(target convert.Format) (func(string, string) error, error) {
 		return convert.ToWebP, nil
 	default:
 		return nil, fmt.Errorf("%w: %q", convert.ErrUnsupportedFormat, target)
-	}
-}
-
-func targetExt(format convert.Format) string {
-	switch format {
-	case convert.JPEG:
-		return ".jpg"
-	case convert.PNG:
-		return ".png"
-	case convert.WebP:
-		return ".webp"
-	default:
-		return ""
-	}
-}
-
-func sourceExt(format convert.Format) string {
-	switch format {
-	case convert.JPEG:
-		return "jpg"
-	case convert.PNG:
-		return "png"
-	case convert.WebP:
-		return "webp"
-	default:
-		return "input"
 	}
 }
