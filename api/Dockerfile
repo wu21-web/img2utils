@@ -1,4 +1,6 @@
 # img2utils — https://github.com/wu21-web/img2utils
+#
+# Build from the repository root: docker build -f api/Dockerfile .
 
 FROM golang:1.26-alpine AS builder
 
@@ -14,7 +16,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/img2utils ./cmd/im
 
 FROM python:3.13-slim
 
-LABEL org.opencontainers.image.title="img2utils-api" \
+LABEL org.opencontainers.image.title="img2utils-flask" \
       org.opencontainers.image.description="Flask HTTP API for the img2utils image converter" \
       org.opencontainers.image.source="https://github.com/wu21-web/img2utils" \
       org.opencontainers.image.url="https://github.com/wu21-web/img2utils" \

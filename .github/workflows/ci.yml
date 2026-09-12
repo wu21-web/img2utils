@@ -95,7 +95,8 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: api/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ github.repository }}-flask:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

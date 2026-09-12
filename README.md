@@ -87,11 +87,6 @@ go build ./cmd/...
 
 ## HTTP API
 
-The `api/` directory contains a small Flask service that accepts base64 images
-and returns base64 results. Base64 encoding and decoding happen in the HTTP
-layer; the Go binary only sees raw bytes over stdin/stdout, so no shell and no
-temporary files are involved.
-
 ```bash
 go build -o bin/img2utils ./cmd/img2utils
 python3 -m venv .venv
@@ -135,29 +130,19 @@ compressed file from being expanded into a huge pixel buffer.
 ### Docker
 
 ```bash
-docker build -t img2utils-api .
-docker run --rm -p 8000:8000 img2utils-api
+docker build -f api/Dockerfile -t img2utils-flask .
+docker run --rm -p 8000:8000 img2utils-flask
 ```
 
-The image compiles `img2utils` in a Go build stage and runs the Flask app as a
-non-root user with `IMG2UTILS_BIN=/app/bin/img2utils`, `HOST=0.0.0.0`, and
-`PORT=8000`. The variables above can be overridden with `docker run -e`, for
-example `-e IMG2UTILS_MAX_PIXELS=10000000`. Builds are attributed to the
-upstream repository through the `org.opencontainers.image.*` labels.
-
-Version tags publish the image to `ghcr.io/wu21-web/img2utils`, tagged with the
-git tag plus its semver forms. Publishing uses the `DOCKER_TOKEN` repository
-secret, a personal access token with the `write:packages` scope:
-
 ```bash
-docker run --rm -p 8000:8000 ghcr.io/wu21-web/img2utils:v0.0
+docker run --rm -p 8000:8000 ghcr.io/wu21-web/img2utils-flask:v0.0
 ```
 
 Every push to `main` also builds the image and moves the `latest` tag, so that
 follows the tip of `main` independently of releases:
 
 ```bash
-docker run --rm -p 8000:8000 ghcr.io/wu21-web/img2utils:latest
+docker run --rm -p 8000:8000 ghcr.io/wu21-web/img2utils-flask:latest
 ```
 
 ## Development

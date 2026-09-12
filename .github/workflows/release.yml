@@ -84,7 +84,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ github.repository }}-flask
           tags: |
             type=ref,event=tag
             type=semver,pattern={{version}}
@@ -93,6 +93,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: api/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
