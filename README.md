@@ -4,11 +4,11 @@ Small, dependency-light image conversion commands written in Go.
 
 ## Commands
 
-| Command    | Converts     | Status          |
-| ---------- | ------------ | --------------- |
-| `jpg2png`  | JPEG -> PNG  | Supported       |
-| `webp2png` | WebP -> PNG  | Supported       |
-| `png2jpg`  | PNG -> JPEG  | Supported       |
+| Command    | Converts    | Status    |
+| ---------- | ----------- | --------- |
+| `jpg2png`  | JPEG -> PNG | Supported |
+| `webp2png` | WebP -> PNG | Supported |
+| `png2jpg`  | PNG -> JPEG | Supported |
 
 WebP decoding is supported; WebP encoding is not.
 
@@ -86,7 +86,7 @@ curl -s http://127.0.0.1:8000/convert \
 ```
 
 ```json
-{"format": "jpg", "image": "/9j/4AAQSkZJRgABAQAAAQABAAD..."}
+{ "format": "jpg", "image": "/9j/4AAQSkZJRgABAQAAAQABAAD..." }
 ```
 
 `GET /health` returns `{"status": "ok"}`. The request body accepts `image` plus
@@ -96,14 +96,14 @@ than `IMG2UTILS_MAX_UPLOAD` bytes (default 16 MiB) return `413`.
 
 Environment variables:
 
-| Variable               | Default        | Purpose                       |
-| ---------------------- | -------------- | ----------------------------- |
-| `IMG2UTILS_BIN`        | `bin/img2utils`| Path to the converter binary  |
-| `IMG2UTILS_TIMEOUT`    | `30`           | Subprocess timeout in seconds |
-| `IMG2UTILS_MAX_UPLOAD` | `16777216`     | Maximum request body in bytes |
-| `IMG2UTILS_MAX_PIXELS` | `25000000`     | Decoded image pixel limit     |
-| `HOST`                 | `127.0.0.1`    | Dev server bind address       |
-| `PORT`                 | `8000`         | Dev server port               |
+| Variable               | Default         | Purpose                       |
+| ---------------------- | --------------- | ----------------------------- |
+| `IMG2UTILS_BIN`        | `bin/img2utils` | Path to the converter binary  |
+| `IMG2UTILS_TIMEOUT`    | `30`            | Subprocess timeout in seconds |
+| `IMG2UTILS_MAX_UPLOAD` | `16777216`      | Maximum request body in bytes |
+| `IMG2UTILS_MAX_PIXELS` | `25000000`      | Decoded image pixel limit     |
+| `HOST`                 | `127.0.0.1`     | Dev server bind address       |
+| `PORT`                 | `8000`          | Dev server port               |
 
 Malformed integer values for these variables stop startup with a clear error
 instead of a bare traceback. Images whose declared dimensions exceed
