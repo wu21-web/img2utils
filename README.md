@@ -104,6 +104,9 @@ Environment variables:
 | `HOST`                 | `127.0.0.1`    | Dev server bind address       |
 | `PORT`                 | `8000`         | Dev server port               |
 
+Malformed integer values for these variables stop startup with a clear error
+instead of a bare traceback.
+
 ## Development
 
 ```bash

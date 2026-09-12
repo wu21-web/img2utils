@@ -1,5 +1,7 @@
 import base64
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -7,6 +9,7 @@ import pytest
 import app as app_module
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+API_ROOT = Path(__file__).resolve().parent
 SAMPLE_PNG = REPO_ROOT / "internal" / "testdata" / "sample.png"
 BINARY = Path(os.environ.get("IMG2UTILS_BIN", REPO_ROOT / "bin" / "img2utils"))
 
@@ -159,3 +162,42 @@ def test_convert_reports_binary_directory(client, tmp_path, monkeypatch):
 
     assert response.status_code == 422
     assert "not runnable" in response.get_json()["error"]
+
+
+def test_env_int_uses_default(monkeypatch):
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert app_module.env_int("PORT", 8000) == 8000
+
+
+def test_env_int_reads_value(monkeypatch):
+    monkeypatch.setenv("PORT", "9000")
+
+    assert app_module.env_int("PORT", 8000) == 9000
+
+
+def test_env_int_rejects_non_integer(monkeypatch):
+    monkeypatch.setenv("PORT", "abc")
+
+    with pytest.raises(RuntimeError, match="PORT must be an integer"):
+        app_module.env_int("PORT", 8000)
+
+
+def test_env_int_rejects_out_of_range(monkeypatch):
+    monkeypatch.setenv("PORT", "70000")
+
+    with pytest.raises(RuntimeError, match="at most 65535"):
+        app_module.env_int("PORT", 8000, minimum=1, maximum=65535)
+
+
+def test_invalid_max_upload_fails_with_clear_message():
+    result = subprocess.run(
+        [sys.executable, "-c", "import app"],
+        cwd=API_ROOT,
+        env={**os.environ, "IMG2UTILS_MAX_UPLOAD": "abc"},
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "IMG2UTILS_MAX_UPLOAD must be an integer" in result.stderr

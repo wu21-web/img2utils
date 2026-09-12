@@ -6,9 +6,25 @@ from flask import Flask, jsonify, request
 
 from converter import ConversionError, convert
 
+
+def env_int(name, default, minimum=None, maximum=None):
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} must be an integer, got {raw!r}") from exc
+    if minimum is not None and value < minimum:
+        raise RuntimeError(f"{name} must be at least {minimum}, got {value}")
+    if maximum is not None and value > maximum:
+        raise RuntimeError(f"{name} must be at most {maximum}, got {value}")
+    return value
+
+
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = int(
-    os.environ.get("IMG2UTILS_MAX_UPLOAD", 16 * 1024 * 1024)
+app.config["MAX_CONTENT_LENGTH"] = env_int(
+    "IMG2UTILS_MAX_UPLOAD", 16 * 1024 * 1024, minimum=1
 )
 
 
@@ -63,5 +79,5 @@ def requested_format(payload):
 if __name__ == "__main__":
     app.run(
         host=os.environ.get("HOST", "127.0.0.1"),
-        port=int(os.environ.get("PORT", "8000")),
+        port=env_int("PORT", 8000, minimum=1, maximum=65535),
     )
